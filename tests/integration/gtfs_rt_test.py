@@ -184,7 +184,7 @@ def test_gtfs_rt_post_no_data():
 
     post_and_check("/gtfs_rt/", 405, "The method is not allowed for the requested URL.", None)
     post_and_check(
-        "/gtfs_rt/{}".format(GTFS_CONTRIBUTOR_ID), 400, "invalid arguments", "no gtfs_rt data provided"
+        "/gtfs_rt/{}".format(GTFS_CONTRIBUTOR_ID), 400, "invalid arguments", "no gtfs-rt data provided"
     )
     post_and_check("/gtfs_rt/unknown_id", 404, "Contributor 'unknown_id' not found", None)
 

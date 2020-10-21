@@ -77,7 +77,7 @@ def test_piv_post_wrong_data():
     # For now, no check on data
     # TODO xfail: check and change test
     assert status == 200
-    assert "PIV feed processed" in res.get("message")
+    assert "piv feed processed" in res.get("message")
 
     with app.app_context():
         # Raw data is saved in db, even when an error occurred
@@ -119,7 +119,7 @@ def test_piv_simple_post(mock_rabbitmq):
     """
     piv_feed = "{}"  # TODO: use a valid PIV feed
     res = api_post("/piv/{}".format(PIV_CONTRIBUTOR_ID), data=piv_feed)
-    assert "PIV feed processed" in res.get("message")
+    assert "piv feed processed" in res.get("message")
 
     with app.app_context():
         rtu_array = RealTimeUpdate.query.all()
@@ -141,7 +141,7 @@ def test_piv_purge(mock_rabbitmq):
     """
     piv_feed = "{}"  # TODO: use a valid PIV feed
     res = api_post("/piv/{}".format(PIV_CONTRIBUTOR_ID), data=piv_feed)
-    assert "PIV feed processed" in res.get("message")
+    assert "piv feed processed" in res.get("message")
 
     with app.app_context():
         # Check there's really something before purge

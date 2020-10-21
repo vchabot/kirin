@@ -114,7 +114,7 @@ def test_cots_simple_post(mock_rabbitmq):
     """
     cots_file = get_fixture_data("cots_train_96231_delayed.json")
     res = api_post("/cots", data=cots_file)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
 
     with app.app_context():
         rtu_array = RealTimeUpdate.query.all()
@@ -154,7 +154,7 @@ def test_cots_delayed_simple_post(mock_rabbitmq):
     """
     cots_96231 = get_fixture_data("cots_train_96231_delayed.json")
     res = api_post("/cots", data=cots_96231)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
 
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 1
@@ -176,7 +176,7 @@ def test_cots_delayed_then_ok(mock_rabbitmq):
     """
     cots_96231 = get_fixture_data("cots_train_96231_delayed.json")
     res = api_post("/cots", data=cots_96231)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
 
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 1
@@ -190,7 +190,7 @@ def test_cots_delayed_then_ok(mock_rabbitmq):
 
     cots_96231 = get_fixture_data("cots_train_96231_normal.json")
     res = api_post("/cots", data=cots_96231)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
 
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 2
@@ -220,7 +220,7 @@ def test_cots_paris_tz(mock_rabbitmq):
     """
     cots_96231 = get_fixture_data("cots_train_96231_normal_paris_tz.json")
     res = api_post("/cots", data=cots_96231)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
 
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 1
@@ -239,7 +239,7 @@ def test_cots_partial_removal_delayed_then_partial_removal_ok(mock_rabbitmq):
     """
     cots_870154 = get_fixture_data("cots_train_870154_partial_removal_delay.json")
     res = api_post("/cots", data=cots_870154)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
 
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 1
@@ -250,7 +250,7 @@ def test_cots_partial_removal_delayed_then_partial_removal_ok(mock_rabbitmq):
 
     cots_870154 = get_fixture_data("cots_train_870154_partial_normal.json")
     res = api_post("/cots", data=cots_870154)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
 
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 2
@@ -265,9 +265,9 @@ def test_cots_delayed_post_twice(mock_rabbitmq):
     """
     cots_96231 = get_fixture_data("cots_train_96231_delayed.json")
     res = api_post("/cots", data=cots_96231)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     res = api_post("/cots", data=cots_96231)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
 
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 2
@@ -289,7 +289,7 @@ def test_cots_mixed_statuses_inside_stop_times(mock_rabbitmq):
     """
     cots_96231 = get_fixture_data("cots_train_96231_mixed_statuses_inside_stops.json")
     res = api_post("/cots", data=cots_96231)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
 
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 1
@@ -309,7 +309,7 @@ def test_cots_mixed_statuses_delay_removal_delay(mock_rabbitmq):
     """
     cots_96231 = get_fixture_data("cots_train_96231_mixed_statuses_delay_removal_delay.json")
     res = api_post("/cots", data=cots_96231)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
 
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 1
@@ -326,10 +326,10 @@ def test_cots_trip_delayed_then_removal(mock_rabbitmq):
     """
     cots_96231_delayed = get_fixture_data("cots_train_96231_delayed.json")
     res = api_post("/cots", data=cots_96231_delayed)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     cots_96231_trip_removal = get_fixture_data("cots_train_96231_trip_removal.json")
     res = api_post("/cots", data=cots_96231_trip_removal)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
 
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 2
@@ -346,10 +346,10 @@ def test_cots_trip_delayed_then_partial_removal(mock_rabbitmq):
     """
     cots_96231_delayed = get_fixture_data("cots_train_96231_delayed.json")
     res = api_post("/cots", data=cots_96231_delayed)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     cots_96231_partial_removal = get_fixture_data("cots_train_96231_partial_removal.json")
     res = api_post("/cots", data=cots_96231_partial_removal)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
 
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 2
@@ -367,7 +367,7 @@ def test_cots_trip_removal_simple_post(mock_rabbitmq):
     """
     cots_6113 = get_fixture_data("cots_train_6113_trip_removal.json")
     res = api_post("/cots", data=cots_6113)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
 
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 1
@@ -383,7 +383,7 @@ def test_cots_trip_removal_pass_midnight(mock_rabbitmq):
     """
     cots_6111 = get_fixture_data("cots_train_6111_pass_midnight_trip_removal.json")
     res = api_post("/cots", data=cots_6111)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
 
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 1
@@ -399,11 +399,11 @@ def test_cots_delayed_and_trip_removal_post(mock_rabbitmq):
     """
     cots_96231 = get_fixture_data("cots_train_96231_delayed.json")
     res = api_post("/cots", data=cots_96231)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
 
     cots_6113 = get_fixture_data("cots_train_6113_trip_removal.json")
     res = api_post("/cots", data=cots_6113)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
 
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 2
@@ -423,9 +423,9 @@ def test_cots_trip_removal_post_twice(mock_rabbitmq):
     """
     cots_6113 = get_fixture_data("cots_train_6113_trip_removal.json")
     res = api_post("/cots", data=cots_6113)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     res = api_post("/cots", data=cots_6113)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
 
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 2
@@ -443,7 +443,7 @@ def test_cots_trip_with_parity(mock_rabbitmq):
     cots_6113 = get_fixture_data("cots_train_6113_trip_removal.json")
     cots_6113_14 = cots_6113.replace('"numeroCourse": "006113",', '"numeroCourse": "006113/4",')
     res = api_post("/cots", data=cots_6113_14)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
 
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 1
@@ -467,7 +467,7 @@ def test_cots_trip_removal_reactivation_delay(mock_rabbitmq):
     """
     cots_6113 = get_fixture_data("cots_train_6113_trip_removal.json")
     res = api_post("/cots", data=cots_6113)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
 
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 1
@@ -477,7 +477,7 @@ def test_cots_trip_removal_reactivation_delay(mock_rabbitmq):
 
     react_6113 = get_fixture_data("cots_train_6113_trip_reactivation.json")
     res = api_post("/cots", data=react_6113)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
 
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 2
@@ -504,7 +504,7 @@ def test_cots_trip_removal_reactivation_delay(mock_rabbitmq):
 
     react_delay_6113 = get_fixture_data("cots_train_6113_trip_reactivation_delay.json")
     res = api_post("/cots", data=react_delay_6113)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
 
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 3
@@ -543,7 +543,7 @@ def test_cots_trip_with_parity_one_unknown_vj(mock_rabbitmq):
     cots_6113 = get_fixture_data("cots_train_6113_trip_removal.json")
     cots_6112_13 = cots_6113.replace('"numeroCourse": "006113",', '"numeroCourse": "006112/3",')
     res = api_post("/cots", data=cots_6112_13)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
 
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 1
@@ -589,7 +589,7 @@ def test_cots_two_trip_removal_one_post(mock_rabbitmq):
     """
     cots_john_trip_removal = get_fixture_data("cots_train_JOHN_trip_removal.json")
     res = api_post("/cots", data=cots_john_trip_removal)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
 
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 1
@@ -606,9 +606,9 @@ def test_cots_two_trip_removal_post_twice(mock_rabbitmq):
     """
     cots_john_trip_removal = get_fixture_data("cots_train_JOHN_trip_removal.json")
     res = api_post("/cots", data=cots_john_trip_removal)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     res = api_post("/cots", data=cots_john_trip_removal)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
 
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 2
@@ -636,7 +636,7 @@ def test_cots_partial_removal_then_reactivation(mock_rabbitmq):
     # Simple partial removal
     cots_080427_removal = get_fixture_data("cots_train_840427_partial_removal.json")
     res = api_post("/cots", data=cots_080427_removal)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
 
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 1
@@ -649,7 +649,7 @@ def test_cots_partial_removal_then_reactivation(mock_rabbitmq):
     # Then 2 stops are reactivated
     cots_080427_partial_react = get_fixture_data("cots_train_840427_partial_reactivation.json")
     res = api_post("/cots", data=cots_080427_partial_react)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
 
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 2
@@ -702,7 +702,7 @@ def test_cots_partial_removal_then_reactivation(mock_rabbitmq):
     # Then all 3 stops are reactivated
     cots_080427_full_react = get_fixture_data("cots_train_840427_full_reactivation.json")
     res = api_post("/cots", data=cots_080427_full_react)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
 
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 3
@@ -734,7 +734,7 @@ def test_cots_partial_removal_then_reactivation(mock_rabbitmq):
     # Then all 3 stops are reactivated and the penultimate has a 5 min delay
     cots_080427_full_react = get_fixture_data("cots_train_840427_full_reactivation_delay.json")
     res = api_post("/cots", data=cots_080427_full_react)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
 
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 4
@@ -798,7 +798,7 @@ def test_cots_added_stop_time():
     """
     cots_add_file = get_fixture_data("cots_train_96231_add.json")
     res = api_post("/cots", data=cots_add_file)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 1
         assert len(TripUpdate.query.all()) == 1
@@ -824,14 +824,14 @@ def test_cots_added_and_deleted_stop_time():
 
     cots_deleted_file = get_fixture_data("cots_train_96231_deleted.json")
     res = api_post("/cots", data=cots_deleted_file)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 1
         assert len(TripUpdate.query.all()) == 0
 
     cots_add_file = get_fixture_data("cots_train_96231_add.json")
     res = api_post("/cots", data=cots_add_file)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 2
         assert len(TripUpdate.query.all()) == 1
@@ -848,7 +848,7 @@ def test_cots_added_and_deleted_stop_time():
     # At this point the trip_update is valid. Adding a new Stop_time in data base
     cots_deleted_file = get_fixture_data("cots_train_96231_deleted.json")
     res = api_post("/cots", data=cots_deleted_file)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 3
         assert len(TripUpdate.query.all()) == 1
@@ -866,7 +866,7 @@ def test_cots_added_and_deleted_stop_time():
 
     cots_deleted_file = get_fixture_data("cots_train_96231_deleted.json")
     res = api_post("/cots", data=cots_deleted_file)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 4
         assert len(TripUpdate.query.all()) == 1
@@ -881,7 +881,7 @@ def test_cots_added_and_deleted_stop_time():
 
     cots_delayed_file = get_fixture_data("cots_train_96231_deleted_and_delayed.json")
     res = api_post("/cots", data=cots_delayed_file)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 5
         assert len(TripUpdate.query.all()) == 1
@@ -903,7 +903,7 @@ def test_cots_added_stop_time_first_position_then_delete_it():
     """
     cots_add_file = get_fixture_data("cots_train_96231_add_first.json")
     res = api_post("/cots", data=cots_add_file)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 1
         assert len(TripUpdate.query.all()) == 1
@@ -922,7 +922,7 @@ def test_cots_added_stop_time_first_position_then_delete_it():
     # we remove the added first stop time
     cots_del_file = get_fixture_data("cots_train_96231_delete_previously_added_first_stop.json")
     res = api_post("/cots", data=cots_del_file)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 2
         assert len(TripUpdate.query.all()) == 1
@@ -947,7 +947,7 @@ def test_cots_added_stop_time_last_position():
     """
     cots_add_file = get_fixture_data("cots_train_96231_add_last.json")
     res = api_post("/cots", data=cots_add_file)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 1
         assert len(TripUpdate.query.all()) == 1
@@ -968,7 +968,7 @@ def test_cots_for_detour():
     """
     cots_add_file = get_fixture_data("cots_train_96231_added_for_detour.json")
     res = api_post("/cots", data=cots_add_file)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 1
         assert len(TripUpdate.query.all()) == 1
@@ -992,7 +992,7 @@ def test_cots_for_detour_in_advance():
     """
     cots_add_file = get_fixture_data("cots_train_96231_added_for_detour_in_advance.json")
     res = api_post("/cots", data=cots_add_file)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 1
         assert len(TripUpdate.query.all()) == 1
@@ -1016,7 +1016,7 @@ def test_cots_add_stop_time_without_delay():
     cots_add_file = get_fixture_data("cots_train_96231_add_without_delay.json")
 
     res = api_post("/cots", data=cots_add_file)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 1
         assert len(TripUpdate.query.all()) == 1
@@ -1136,7 +1136,7 @@ def test_cots_add_no_delay():
     """
     cots_add_file = get_fixture_data("cots_train_96231_no_delay_add_before_add_with_delay.json")
     res = api_post("/cots", data=cots_add_file)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 1
         check_add_no_delays_96231()
@@ -1161,7 +1161,7 @@ def test_cots_add_stop_time_with_delays_around():
         "cots_train_96231_add_with_departure_after_next_base_stop_time_arrival.json"
     )
     res = api_post("/cots", data=cots_add_file)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 1
         check_add_with_delays_96231()
@@ -1176,7 +1176,7 @@ def test_cots_add_and_delay_stop_time_with_delays_around():
         "cots_train_96231_add_with_delay_departure_after_next_base_stop_time_arrival.json"
     )
     res = api_post("/cots", data=cots_add_file)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 1
         check_add_with_delays_96231()
@@ -1193,7 +1193,7 @@ def test_chain_add_no_delay_and_add_with_delay_around():
     """
     cots_add_file = get_fixture_data("cots_train_96231_no_delay_add_before_add_with_delay.json")
     res = api_post("/cots", data=cots_add_file)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 1
         check_add_no_delays_96231()
@@ -1202,14 +1202,14 @@ def test_chain_add_no_delay_and_add_with_delay_around():
         "cots_train_96231_add_with_departure_after_next_base_stop_time_arrival.json"
     )
     res = api_post("/cots", data=cots_add_file)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 2
         check_add_with_delays_96231()
 
     cots_add_file = get_fixture_data("cots_train_96231_no_delay_add_before_add_with_delay.json")
     res = api_post("/cots", data=cots_add_file)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 3
         check_add_no_delays_96231()
@@ -1218,14 +1218,14 @@ def test_chain_add_no_delay_and_add_with_delay_around():
         "cots_train_96231_add_with_delay_departure_after_next_base_stop_time_arrival.json"
     )
     res = api_post("/cots", data=cots_add_file)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 4
         check_add_with_delays_96231()
 
     cots_add_file = get_fixture_data("cots_train_96231_no_delay_add_before_add_with_delay.json")
     res = api_post("/cots", data=cots_add_file)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 5
         check_add_no_delays_96231()
@@ -1370,21 +1370,21 @@ def test_cots_for_added_trip_chain_type_1():
     """
     cots_add_file = get_fixture_data("cots_train_151515_added_trip.json")
     res = api_post("/cots", data=cots_add_file)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 1
         check_add_trip_151515()
 
     cots_add_file = get_fixture_data("cots_train_151515_added_trip_with_delay.json")
     res = api_post("/cots", data=cots_add_file)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 2
         check_add_trip_151515_with_delay()
 
     cots_add_file = get_fixture_data("cots_train_151515_added_trip_to_normal.json")
     res = api_post("/cots", data=cots_add_file)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 3
         check_add_trip_151515()
@@ -1400,28 +1400,28 @@ def test_cots_for_added_trip_chain_type_2():
     """
     cots_add_file = get_fixture_data("cots_train_151515_added_trip.json")
     res = api_post("/cots", data=cots_add_file)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 1
         check_add_trip_151515()
 
     cots_add_file = get_fixture_data("cots_train_151515_added_trip_with_delay.json")
     res = api_post("/cots", data=cots_add_file)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 2
         check_add_trip_151515_with_delay()
 
     cots_add_file = get_fixture_data("cots_train_151515_added_trip_with_delay_and_stop_time_deleted.json")
     res = api_post("/cots", data=cots_add_file)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 3
         check_add_trip_151515_with_delay_and_a_delete()
 
     cots_add_file = get_fixture_data("cots_train_151515_added_trip_to_normal.json")
     res = api_post("/cots", data=cots_add_file)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 4
         check_add_trip_151515()
@@ -1437,28 +1437,28 @@ def test_cots_for_added_trip_chain_type_3():
     """
     cots_add_file = get_fixture_data("cots_train_151515_added_trip.json")
     res = api_post("/cots", data=cots_add_file)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 1
         check_add_trip_151515()
 
     cots_add_file = get_fixture_data("cots_train_151515_added_trip_with_delay.json")
     res = api_post("/cots", data=cots_add_file)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 2
         check_add_trip_151515_with_delay()
 
     cots_add_file = get_fixture_data("cots_train_151515_added_trip_with_delay_and_stop_time_added.json")
     res = api_post("/cots", data=cots_add_file)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 3
         check_add_trip_151515_with_delay_and_an_add()
 
     cots_add_file = get_fixture_data("cots_train_151515_deleted_trip_with_delay_and_stop_time_added.json")
     res = api_post("/cots", data=cots_add_file)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 4
         trips = TripUpdate.query.all()
@@ -1477,7 +1477,7 @@ def test_cots_add_same_trip_more_than_once():
     """
     cots_add_file = get_fixture_data("cots_train_151515_added_trip.json")
     res = api_post("/cots", data=cots_add_file)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 1
         check_add_trip_151515()
@@ -1497,14 +1497,14 @@ def test_cots_delete_added_trip_more_than_once():
     """
     cots_add_file = get_fixture_data("cots_train_151515_added_trip.json")
     res = api_post("/cots", data=cots_add_file)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 1
         check_add_trip_151515()
 
     cots_delete_file = get_fixture_data("cots_train_151515_deleted_trip_with_delay_and_stop_time_added.json")
     res = api_post("/cots", data=cots_delete_file)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 2
         trips = TripUpdate.query.all()
@@ -1522,7 +1522,7 @@ def test_cots_delete_added_trip_more_than_once():
 
     cots_add_file = get_fixture_data("cots_train_151515_added_trip.json")
     res = api_post("/cots", data=cots_add_file)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 4
         check_add_trip_151515()
@@ -1534,7 +1534,7 @@ def test_cots_add_trip_in_coach():
     """
     cots_add_file = get_fixture_data("cots_train_151515_added_trip_in_coach.json")
     res = api_post("/cots", data=cots_add_file)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 1
         trips = TripUpdate.query.all()
@@ -1555,7 +1555,7 @@ def test_cots_add_trip_with_unknown_mode():
     """
     cots_add_file = get_fixture_data("cots_train_151515_added_trip_with_unknown_mode.json")
     res = api_post("/cots", data=cots_add_file)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 1
         trips = TripUpdate.query.all()
@@ -1594,7 +1594,7 @@ def test_cots_on_add_trip_without_first_cots():
     """
     cots_add_file = get_fixture_data("cots_train_151515_added_trip_with_delay.json")
     res = api_post("/cots", data=cots_add_file)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 1
         assert RealTimeUpdate.query.first().status == "KO"
@@ -1611,7 +1611,7 @@ def test_cots_update_trip_with_delay_pass_midnight_on_first_station():
     """
     cots_update_file = get_fixture_data("cots_train_8837_pass_midnight_at_first_station.json")
     res = api_post("/cots", data=cots_update_file)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 1
         trips = TripUpdate.query.all()
@@ -1655,7 +1655,7 @@ def test_cots_add_first_stop_with_advance_pass_midnight():
     """
     cots_update_file = get_fixture_data("cots_train_9580_pass_midnight_in_advance_on_first_station.json")
     res = api_post("/cots", data=cots_update_file)
-    assert res == "OK"
+    assert "cots feed processed" in res.get("message")
     with app.app_context():
         assert len(RealTimeUpdate.query.all()) == 1
         trips = TripUpdate.query.all()

@@ -30,13 +30,10 @@
 # www.navitia.io
 
 from __future__ import absolute_import, print_function, unicode_literals, division
-import flask
 from flask.globals import current_app
 import logging
 
-from flask_restful import Resource
-
-from kirin.core.abstract_builder import wrap_build
+from kirin.core.abstract_ressource import AbstractRealtimeFeedResource
 from kirin.cots import KirinModelBuilder
 from kirin.exceptions import InvalidArguments, SubServiceError
 from kirin.core import model
@@ -63,21 +60,11 @@ def get_cots_contributor(include_deactivated=False):
     return contributor[0]
 
 
-def get_cots(req):
-    """
-    get COTS stream, for the moment, it's the raw json
-    """
-    if not req.data:
-        raise InvalidArguments("no COTS data provided")
-    return req.data
-
-
-class Cots(Resource):
-    def __init__(self):
-        self.builder = KirinModelBuilder(get_cots_contributor())
-
+class Cots(AbstractRealtimeFeedResource):
     def post(self):
-        raw_json = get_cots(flask.globals.request)
+        self.connector_type = ConnectorType.cots
+        cots_contributor = get_cots_contributor()
+        self.id = cots_contributor.id
+        self.kirin_model_builder = KirinModelBuilder
 
-        wrap_build(self.builder, raw_json)
-        return "OK", 200
+        return AbstractRealtimeFeedResource.post(self)

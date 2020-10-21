@@ -30,17 +30,15 @@
 # www.navitia.io
 
 from __future__ import absolute_import, print_function, unicode_literals, division
-import flask
 from flask import url_for
 from flask.globals import current_app
 from flask_restful import Resource, abort
 
-from kirin.core.abstract_builder import wrap_build
-from kirin.exceptions import InvalidArguments
 import navitia_wrapper
 from kirin.gtfs_rt import KirinModelBuilder
 from kirin import redis_client
 from kirin.core import model
+from kirin.core.abstract_ressource import AbstractRealtimeFeedResource
 from kirin.core.types import ConnectorType
 
 
@@ -51,12 +49,6 @@ def get_gtfsrt_contributors(include_deactivated=False):
     return model.Contributor.find_by_connector_type(
         ConnectorType.gtfs_rt.value, include_deactivated=include_deactivated
     )
-
-
-def _get_gtfs_rt(req):
-    if not req.data:
-        raise InvalidArguments("no gtfs_rt data provided")
-    return req.data
 
 
 def make_navitia_wrapper(contributor):
@@ -81,20 +73,10 @@ class GtfsRTIndex(Resource):
         return response, 200
 
 
-class GtfsRT(Resource):
+class GtfsRT(AbstractRealtimeFeedResource):
     def post(self, id=None):
-        if id is None:
-            abort(400, message="Contributor's id is missing")
+        self.connector_type = ConnectorType.gtfs_rt
+        self.id = id
+        self.kirin_model_builder = KirinModelBuilder
 
-        contributor = (
-            model.Contributor.query_existing()
-            .filter_by(id=id, connector_type=ConnectorType.gtfs_rt.value)
-            .first()
-        )
-        if not contributor:
-            abort(404, message="Contributor '{}' not found".format(id))
-
-        raw_proto = _get_gtfs_rt(flask.globals.request)
-
-        wrap_build(KirinModelBuilder(contributor), raw_proto)
-        return {"message": "GTFS-RT feed processed"}, 200
+        return AbstractRealtimeFeedResource.post(self)
