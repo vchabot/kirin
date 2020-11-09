@@ -33,6 +33,7 @@ from __future__ import absolute_import, print_function, unicode_literals, divisi
 from datetime import timedelta, datetime
 
 import pytest
+import ujson
 
 from kirin import app, db
 from kirin.core.model import (
@@ -612,35 +613,71 @@ def test_piv_partial_removal(mock_rabbitmq):
     assert mock_rabbitmq.call_count == 1
 
 
+def _set_piv_disruption(fixture, evt_type, message):
+    json_train = ujson.loads(fixture)
+    json_train["objects"][0]["object"]["evenement"] = [{"type": evt_type, "message": message}]
+    return ujson.dumps(json_train)
+
+
+def _set_event_on_stop(fixture, evt_type, dep_or_arr, rang, message=None, motif_modification=None):
+    json_train = ujson.loads(fixture)
+    ads = json_train["objects"][0]["object"]["listeArretsDesserte"]["arret"]
+    for desserte in ads:
+        if desserte["rang"] == rang:
+            desserte[dep_or_arr]["evenement"] = {"type": evt_type, "texte": message}
+            if motif_modification:
+                desserte[dep_or_arr]["motifModification"] = motif_modification
+    return ujson.dumps(json_train)
+
+
 def test_piv_modification_limitation(mock_rabbitmq):
     """
-    the trip 23186 is deleted except the first two stop
+    the trip 23187 is deleted except the first two stop
     """
     # Simple modification limitation
-    piv_23186_removal = get_fixture_data("piv/stomp_20201022_23186_modification_limitation.json")
-    res = api_post("/piv/{}".format(PIV_CONTRIBUTOR_ID), data=piv_23186_removal)
+    piv_23187_removal = get_fixture_data("piv/stomp_20201022_23187_blank_fixture.json")
+
+    piv_23187_removal = _set_piv_disruption(piv_23187_removal, evt_type="MODIFICATION_LIMITATION", message="")
+    piv_23187_removal = _set_event_on_stop(
+        fixture=piv_23187_removal,
+        evt_type="SUPPRESSION_PARTIELLE",
+        dep_or_arr="depart",
+        motif_modification="Absence inopinée d'un agent",
+        rang=1,
+    )
+    for rang in range(2, 5):
+        for event_toggle in ["arrivee", "depart"]:
+            piv_23187_removal = _set_event_on_stop(
+                fixture=piv_23187_removal,
+                evt_type="SUPPRESSION_PARTIELLE",
+                dep_or_arr=event_toggle,
+                motif_modification="Absence inopinée d'un agent",
+                rang=rang,
+            )
+
+    res = api_post("/piv/{}".format(PIV_CONTRIBUTOR_ID), data=piv_23187_removal)
     assert "PIV feed processed" in res.get("message")
 
     with app.app_context():
         assert RealTimeUpdate.query.count() == 1
         assert TripUpdate.query.count() == 1
-        assert StopTimeUpdate.query.count() == 17
+        assert StopTimeUpdate.query.count() == 6
         assert RealTimeUpdate.query.first().status == "OK"
 
         with app.app_context():
             db_trip_partial_removed = TripUpdate.find_by_dated_vj(
-                "PIV:2020-10-22:23186:1187:Train", datetime(2020, 10, 22, 20, 34)
+                "PIV:2020-10-22:23187:1187:Train", datetime(2020, 10, 22, 20, 34)
             )
             assert db_trip_partial_removed
 
-            assert db_trip_partial_removed.vj.navitia_trip_id == "PIV:2020-10-22:23186:1187:Train"
+            assert db_trip_partial_removed.vj.navitia_trip_id == "PIV:2020-10-22:23187:1187:Train"
             assert db_trip_partial_removed.vj.start_timestamp == datetime(2020, 10, 22, 20, 34)
             assert db_trip_partial_removed.vj_id == db_trip_partial_removed.vj.id
             assert db_trip_partial_removed.status == "update"
             assert db_trip_partial_removed.effect == "REDUCED_SERVICE"
 
-            # 17 stop times must have been created
-            assert len(db_trip_partial_removed.stop_time_updates) == 17
+            # 6 stop times must have been created
+            assert len(db_trip_partial_removed.stop_time_updates) == 6
 
             # the first stop have not been changed
             first_st = db_trip_partial_removed.stop_time_updates[0]
@@ -653,12 +690,12 @@ def test_piv_modification_limitation(mock_rabbitmq):
             second_st = db_trip_partial_removed.stop_time_updates[1]
             assert second_st.arrival_status == "none"
             assert second_st.departure_status == "delete"
-            assert second_st.message is None
+            assert second_st.message == "Absence inopinée d'un agent"
 
-            for s in db_trip_partial_removed.stop_time_updates[2:16]:
+            for s in db_trip_partial_removed.stop_time_updates[2:5]:
                 assert s.arrival_status == "delete"
                 assert s.departure_status == "delete"
-                assert s.message is None
+                assert s.message == "Absence inopinée d'un agent"
 
             assert db_trip_partial_removed.contributor_id == PIV_CONTRIBUTOR_ID
 
