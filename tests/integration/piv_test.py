@@ -46,7 +46,7 @@ from kirin.core.model import (
 )
 from kirin.core.types import ConnectorType, TripEffect, ModificationType
 from kirin.tasks import purge_trip_update, purge_rt_update
-from tests.check_utils import api_post, api_get, get_fixture_data
+from tests.check_utils import api_post, api_get, get_fixture_data, get_fixture_data_as_dict
 from tests import mock_navitia
 from tests.integration.conftest import PIV_CONTRIBUTOR_ID
 
@@ -614,20 +614,16 @@ def test_piv_partial_removal(mock_rabbitmq):
 
 
 def _set_piv_disruption(fixture, evt_type, message):
-    json_train = ujson.loads(fixture)
-    json_train["objects"][0]["object"]["evenement"] = [{"type": evt_type, "message": message}]
-    return ujson.dumps(json_train)
+    fixture["objects"][0]["object"]["evenement"] = [{"type": evt_type, "message": message}]
 
 
 def _set_event_on_stop(fixture, evt_type, dep_or_arr, rang, message=None, motif_modification=None):
-    json_train = ujson.loads(fixture)
-    ads = json_train["objects"][0]["object"]["listeArretsDesserte"]["arret"]
+    ads = fixture["objects"][0]["object"]["listeArretsDesserte"]["arret"]
     for desserte in ads:
         if desserte["rang"] == rang:
             desserte[dep_or_arr]["evenement"] = {"type": evt_type, "texte": message}
             if motif_modification:
                 desserte[dep_or_arr]["motifModification"] = motif_modification
-    return ujson.dumps(json_train)
 
 
 def test_piv_modification_limitation(mock_rabbitmq):
@@ -635,10 +631,10 @@ def test_piv_modification_limitation(mock_rabbitmq):
     the trip 23187 is deleted except the first two stop
     """
     # Simple modification limitation
-    piv_23187_removal = get_fixture_data("piv/stomp_20201022_23187_blank_fixture.json")
+    piv_23187_removal = get_fixture_data_as_dict("piv/stomp_20201022_23187_blank_fixture.json")
 
-    piv_23187_removal = _set_piv_disruption(piv_23187_removal, evt_type="MODIFICATION_LIMITATION", message="")
-    piv_23187_removal = _set_event_on_stop(
+    _set_piv_disruption(piv_23187_removal, evt_type="MODIFICATION_LIMITATION", message="")
+    _set_event_on_stop(
         fixture=piv_23187_removal,
         evt_type="SUPPRESSION_PARTIELLE",
         dep_or_arr="depart",
@@ -647,7 +643,7 @@ def test_piv_modification_limitation(mock_rabbitmq):
     )
     for rang in range(2, 5):
         for event_toggle in ["arrivee", "depart"]:
-            piv_23187_removal = _set_event_on_stop(
+            _set_event_on_stop(
                 fixture=piv_23187_removal,
                 evt_type="SUPPRESSION_PARTIELLE",
                 dep_or_arr=event_toggle,
@@ -655,7 +651,7 @@ def test_piv_modification_limitation(mock_rabbitmq):
                 rang=rang,
             )
 
-    res = api_post("/piv/{}".format(PIV_CONTRIBUTOR_ID), data=piv_23187_removal)
+    res = api_post("/piv/{}".format(PIV_CONTRIBUTOR_ID), data=ujson.dumps(piv_23187_removal))
     assert "PIV feed processed" in res.get("message")
 
     with app.app_context():

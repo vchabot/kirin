@@ -80,6 +80,10 @@ def get_fixture_data(name):
         return fixture.read().decode("utf_8")
 
 
+def get_fixture_data_as_dict(name):
+    return _to_json(get_fixture_data(name))
+
+
 def _dt(dt_to_parse, year=2015, month=9, day=8):
     """
     small helper to ease the reading of the tests
