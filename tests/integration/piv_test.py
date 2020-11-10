@@ -502,8 +502,11 @@ def test_piv_event_priority(mock_rabbitmq):
     """
     simple trip removal post
     """
-    piv_feed = get_fixture_data("piv/stomp_20201022_23186_trip_removal_delayed.json")
-    res = api_post("/piv/{}".format(PIV_CONTRIBUTOR_ID), data=piv_feed)
+    piv_feed = get_fixture_data_as_dict("piv/stomp_20201022_23187_blank_fixture.json")
+    _set_piv_disruption(piv_feed, evt_type="SUPPRESSION", message="Indisponibilité d'un matériel")
+    _set_piv_disruption(piv_feed, evt_type="RETARD", message="Absence inopinée d'un agent")
+
+    res = api_post("/piv/{}".format(PIV_CONTRIBUTOR_ID), data=ujson.dumps(piv_feed))
     assert "PIV feed processed" in res.get("message")
 
     with app.app_context():
@@ -513,7 +516,7 @@ def test_piv_event_priority(mock_rabbitmq):
 
         db_trip_removal = TripUpdate.query.first()
         assert db_trip_removal
-        assert db_trip_removal.vj.navitia_trip_id == "PIV:2020-10-22:23186:1187:Train"
+        assert db_trip_removal.vj.navitia_trip_id == "PIV:2020-10-22:23187:1187:Train"
         assert db_trip_removal.vj.start_timestamp == datetime(2020, 10, 22, 20, 34)
         assert db_trip_removal.status == "delete"
         assert db_trip_removal.effect == "NO_SERVICE"
@@ -614,7 +617,11 @@ def test_piv_partial_removal(mock_rabbitmq):
 
 
 def _set_piv_disruption(fixture, evt_type, message):
-    fixture["objects"][0]["object"]["evenement"] = [{"type": evt_type, "message": message}]
+    evenement = fixture["objects"][0]["object"].get("evenement")
+    if evenement:
+        fixture["objects"][0]["object"]["evenement"].append({"type": evt_type, "texte": message})
+    else:
+        fixture["objects"][0]["object"]["evenement"] = [{"type": evt_type, "texte": message}]
 
 
 def _set_event_on_stop(fixture, evt_type, dep_or_arr, rang, message=None, motif_modification=None):
