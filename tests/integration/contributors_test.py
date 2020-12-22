@@ -218,8 +218,6 @@ def test_post_with_id_in_the_resource_path_and_data(test_client):
             "id": "overridden_id",
             "navitia_coverage": "jp",
             "connector_type": ConnectorType.gtfs_rt.value,
-            "nb_days_to_keep_trip_update": DEFAULT_DAYS_TO_KEEP_TRIP_UPDATE,
-            "nb_days_to_keep_rt_update": DEFAULT_DAYS_TO_KEEP_RT_UPDATE,
         },
     )
     assert resp.status_code == 201
