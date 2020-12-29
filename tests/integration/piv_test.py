@@ -88,7 +88,8 @@ def _set_event_on_stop(fixture, dep_or_arr_key, rang, disruption=None, modificat
                     else:
                         desserte[dep_or_arr_key].pop("evenement", None)
                 if retard_dict:
-                    desserte[dep_or_arr_key]["evenement"]["retard"] = retard_dict
+                    if "evenement" in desserte[dep_or_arr_key]:
+                        desserte[dep_or_arr_key]["evenement"]["retard"] = retard_dict
                     date_heure = parser.parse(
                         desserte[dep_or_arr_key]["dateHeure"], dayfirst=False, yearfirst=True, ignoretz=False
                     )
@@ -1385,6 +1386,100 @@ def test_piv_added_stop_time_in_the_middle(mock_rabbitmq):
     assert "PIV feed processed" in res.get("message")
 
     _assert_db_added_stop_time_in_the_middle()
+
+
+def test_piv_added_stop_time_in_the_middle_and_delay(mock_rabbitmq):
+    """ "
+    stop is inserted on rang 3 and a delay of 1 h is applied on all
+    (big enough to have stop's realtime datetime after next stop's base-schedule datetime)
+    """
+    piv_23187_addition = _get_stomp_20201022_23187_stop_time_added_in_the_middle_fixture()
+
+    disruption = DisruptionTuple(type="RETARD_PROJETE", texte="")
+    modification = ModificationTuple(motif="Indisponibilité d'un matériel", statut=None)
+    retard = {"duree": 60, "dureeInterne": 61}
+    _set_event_on_stops(
+        fixture=piv_23187_addition,
+        disruption=disruption,
+        modification=modification,
+        retard_dict=retard,
+        rang_min=1,
+        rang_max=2,
+    )
+    _set_event_on_stops(
+        fixture=piv_23187_addition,
+        retard_dict=retard,
+        rang_min=3,
+        rang_max=3,
+    )
+    _set_event_on_stops(
+        fixture=piv_23187_addition,
+        disruption=disruption,
+        modification=modification,
+        retard_dict=retard,
+        rang_min=4,
+        rang_max=6,
+    )
+
+    res = api_post("/piv/{}".format(PIV_CONTRIBUTOR_ID), data=ujson.dumps(piv_23187_addition))
+    assert "PIV feed processed" in res.get("message")
+
+    with app.app_context():
+        assert RealTimeUpdate.query.count() == 1
+        assert TripUpdate.query.count() == 1
+        db_trip = TripUpdate.query.first()
+
+        assert db_trip.status == ModificationType.update.name
+        assert db_trip.effect == TripEffect.MODIFIED_SERVICE.name
+        assert db_trip.company_id == "company:PIVPP:1187"
+        assert db_trip.physical_mode_id == "physical_mode:LongDistanceTrain"
+        assert db_trip.headsign == "23187"
+        assert len(db_trip.stop_time_updates) == 7
+
+        normal_st = db_trip.stop_time_updates[0]
+        assert normal_st.stop_id == "stop_point:PIV:85010231:Train"
+        assert normal_st.departure_status == ModificationType.none.name
+        assert normal_st.departure == datetime(2020, 10, 22, 20, 34)
+
+        delay_st = db_trip.stop_time_updates[1]
+        assert delay_st.stop_id == "stop_point:PIV:85010157:Train"
+        assert delay_st.arrival_status == ModificationType.update.name
+        assert delay_st.arrival == datetime(2020, 10, 22, 21, 35)
+        assert delay_st.departure_status == ModificationType.update.name
+        assert delay_st.departure == datetime(2020, 10, 22, 21, 35, 30)
+
+        delay_st = db_trip.stop_time_updates[2]
+        assert delay_st.stop_id == "stop_point:PIV:85010140:Train"
+        assert delay_st.arrival_status == ModificationType.update.name
+        assert delay_st.arrival == datetime(2020, 10, 22, 21, 47)
+        assert delay_st.departure_status == ModificationType.update.name
+        assert delay_st.departure == datetime(2020, 10, 22, 21, 48)
+
+        added_st = db_trip.stop_time_updates[3]
+        assert added_st.stop_id == "stop_point:PIV:85010082:Train"
+        assert added_st.arrival_status == ModificationType.add.name
+        assert added_st.arrival == datetime(2020, 10, 22, 22, 05)
+        assert added_st.departure_status == ModificationType.add.name
+        assert added_st.departure == datetime(2020, 10, 22, 22, 07)
+
+        delay_st = db_trip.stop_time_updates[4]
+        assert delay_st.stop_id == "stop_point:PIV:85162735:Train"
+        assert delay_st.arrival_status == ModificationType.update.name
+        assert delay_st.arrival == datetime(2020, 10, 22, 22, 16)
+        assert delay_st.departure_status == ModificationType.update.name
+        assert delay_st.departure == datetime(2020, 10, 22, 22, 17)
+
+        delay_st = db_trip.stop_time_updates[5]
+        assert delay_st.stop_id == "stop_point:PIV:85162750:Train"
+        assert delay_st.arrival_status == ModificationType.update.name
+        assert delay_st.arrival == datetime(2020, 10, 22, 22, 19)
+        assert delay_st.departure_status == ModificationType.update.name
+        assert delay_st.departure == datetime(2020, 10, 22, 22, 20)
+
+        delay_st = db_trip.stop_time_updates[6]
+        assert delay_st.stop_id == "stop_point:PIV:87745497:Train"
+        assert delay_st.arrival_status == ModificationType.update.name
+        assert delay_st.arrival == datetime(2020, 10, 22, 22, 25)
 
 
 def test_piv_added_stop_time_at_the_end(mock_rabbitmq):
