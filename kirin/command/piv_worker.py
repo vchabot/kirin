@@ -168,13 +168,14 @@ class PivWorker(ConsumerMixin):
 
 @manager.command
 def piv_worker():
-    # We assume one and only one PIV contributor is going to exist in the DB
-    # Therefore, we enforce one and only one `PivWorker` is running at a time
+    # We assume a maximum of one PIV contributor is going to exist in the DB
+    # Therefore, we enforce a maximum of one `PivWorker` is running at a time
     while True:
         try:
             with get_lock(logger, PIV_LOCK_NAME, PIV_WORKER_REDIS_TIMEOUT_LOCK.total_seconds()) as locked:
                 if locked:
                     should_wait = True
+                    contributor = None
                     try:
                         contributors = get_piv_contributors()
                         if len(contributors) == 0:
@@ -204,9 +205,10 @@ def piv_worker():
                             db.session.rollback()
                         if should_wait:
                             time.sleep(CONF_RELOAD_INTERVAL.total_seconds())
-                        db.session.expire(
-                            contributor
-                        )  # force db-reload otherwise staying locked on previous contributor's config
+                        if contributor is not None:
+                            db.session.expire(
+                                contributor
+                            )  # force db-reload otherwise staying locked on previous contributor's config
                 else:
                     logger.debug("Lock {%s} un-acquired", PIV_LOCK_NAME)
                     time.sleep(CONF_RELOAD_INTERVAL.total_seconds())
