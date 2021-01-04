@@ -68,7 +68,7 @@ def must_never_log(exception):
 
 NOT_REPROCESSABLE_EXCEPTIONS = [InvalidArguments, UnsupportedValue]
 
-WARNING_EXCEPTIONS = [ObjectNotFound, NavitiaException] + NOT_REPROCESSABLE_EXCEPTIONS
+WARNING_EXCEPTIONS = NOT_REPROCESSABLE_EXCEPTIONS + [ObjectNotFound]
 
 
 def is_only_warning_exception(exception):
