@@ -29,8 +29,8 @@ is_active | Boolean, Optional | Used to activate/deactivate the kirin service fo
 broker_url| String, Optional | Url of the AMQP broker to listen for realtime information queue
 exchange_name| String, Optional | Exchange of the AMQP broker to listen for realtime information
 queue_name| String, Optional | Queue of the AMQP broker to listen for realtime information queue
-nb_days_to_keep_trip_update| Integer, Optional | number of days to keep in trip_update table
-nb_days_to_keep_rt_update| Integer, Optional | number of days to keep in real_time_update table
+nb_days_to_keep_trip_update| Integer, Optional | For trip_update table (archive of all the processed realtime-trips, used by Navitia in case of reload): number of days to keep before purge (considering trip's start date)
+nb_days_to_keep_rt_update| Integer, Optional | For real_time_update table (text archive of all "raw" feeds received, used for diagnostic): number of days to keep before purge (considering date of reception of the feed)
 
 Note: `broker_url`, `exchange_name` and `queue_name` are used for `piv` contributor only for now.
 All 3 must be filled if used.

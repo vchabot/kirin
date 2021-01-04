@@ -70,8 +70,8 @@ class Contributors(Resource):
         "broker_url": {"type": ["string", "null"], "format": "uri"},
         "exchange_name": {"type": ["string", "null"]},
         "queue_name": {"type": ["string", "null"]},
-        "nb_days_to_keep_trip_update": {"type": "integer"},
-        "nb_days_to_keep_rt_update": {"type": "integer"},
+        "nb_days_to_keep_trip_update": {"type": ["integer", "null"]},
+        "nb_days_to_keep_rt_update": {"type": ["integer", "null"]},
     }
 
     post_data_schema = {
@@ -80,8 +80,6 @@ class Contributors(Resource):
         "required": [
             "navitia_coverage",
             "connector_type",
-            "nb_days_to_keep_trip_update",
-            "nb_days_to_keep_rt_update",
         ],
     }
 
