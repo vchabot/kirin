@@ -50,6 +50,7 @@ from kirin.core.types import (
     get_effect_by_stop_time_status,
     SIMPLE_MODIF_STATUSES,
     StopTimeEvent,
+    DELETED_STATUSES,
 )
 from kirin.exceptions import InvalidArguments, UnsupportedValue, ObjectNotFound
 from kirin.utils import make_rt_update, get_value, as_utc_naive_dt, record_internal_failure, as_duration
@@ -62,6 +63,7 @@ TRIP_PIV_ID_FORMAT = "PIV:REALTIME:{}"
 STATUS_MAP = {"arrivee": "arrival_status", "depart": "departure_status"}
 DELAY_MAP = {"arrivee": "arrival_delay", "depart": "departure_delay"}
 STOP_EVENT_DATETIME_MAP = {"arrivee": "arrival", "depart": "departure"}
+STOP_EVENT_MDI_MAP = {"arrivee": "indicateurDescenteInterdite", "depart": "indicateurMonteeInterdite"}
 
 
 trip_piv_status_to_effect = {
@@ -210,21 +212,8 @@ def _extract_navitia_stop_time(uic8, nav_vj):
     return nav_stop_times[0], log_dict
 
 
-def _check_stop_time_consistency(previous_rt_stop_time_dep, current_rt_stop_time, uic8):
-    previous_rt_stop_time_dep = (
-        previous_rt_stop_time_dep
-        if previous_rt_stop_time_dep is not None
-        else datetime.datetime.fromtimestamp(0)
-    )
-
-    rt_arrival = current_rt_stop_time.get("arrivee")
-    rt_arrival = rt_arrival if rt_arrival is not None else previous_rt_stop_time_dep
-
-    rt_departure = current_rt_stop_time.get("depart")
-    rt_departure = rt_departure if rt_departure is not None else rt_arrival
-
-    if not (previous_rt_stop_time_dep <= rt_arrival <= rt_departure):
-        raise InvalidArguments("invalid feed: stop_point's({}) time is not consistent".format(uic8))
+def _is_stop_event_served(event_datetime, event_status, mdi):
+    return event_datetime and not ((event_status and event_status in DELETED_STATUSES) or mdi)
 
 
 def _get_message(arret):
@@ -392,12 +381,10 @@ class KirinModelBuilder(AbstractKirinModelBuilder):
 
         # this variable is used to memoize the last stop_time's departure in order to check the stop_time consistency
         # ex. stop_time[i].arrival/departure must be greater than stop_time[i-1].departure
-        previous_rt_stop_time_dep = None
-
+        previous_rt_stop_event_time = datetime.datetime.fromtimestamp(0)
         for arret in ads:
             # retrieve navitia's stop_point corresponding to the current PIV ad
             nav_stop, log_dict = self._get_navitia_stop_point(arret, vj.navitia_vj)
-            rt_stop_time = {"arrivee": None, "depart": None}  # used to check consistency
 
             if log_dict:
                 record_internal_failure(log_dict["log"], contributor=self.contributor.id)
@@ -423,7 +410,6 @@ class KirinModelBuilder(AbstractKirinModelBuilder):
                     piv_event_datetime = get_value(event, "dateHeureReelle", nullable=True)
                     event_datetime = as_utc_naive_dt(piv_event_datetime) if piv_event_datetime else None
                     if event_datetime:
-                        rt_stop_time[event_toggle] = event_datetime
                         setattr(st_update, STOP_EVENT_DATETIME_MAP[event_toggle], event_datetime)
 
                     if piv_event_status in ["SUPPRESSION_PARTIELLE"]:
@@ -459,12 +445,19 @@ class KirinModelBuilder(AbstractKirinModelBuilder):
                 event_status = getattr(st_update, STATUS_MAP[event_toggle], ModificationType.none.name)
                 highest_st_status = get_higher_status(highest_st_status, event_status)
 
-            _check_stop_time_consistency(
-                previous_rt_stop_time_dep,
-                rt_stop_time,
-                uic8=get_value(get_value(arret, "emplacement"), "code"),
-            )
-            previous_rt_stop_time_dep = rt_stop_time["depart"]
+                mdi = (
+                    arret[STOP_EVENT_MDI_MAP[event_toggle]]
+                    if arret.get(STOP_EVENT_MDI_MAP[event_toggle])
+                    else False
+                )
+                if _is_stop_event_served(event_datetime, event_status, mdi):
+                    if previous_rt_stop_event_time > event_datetime:
+                        raise InvalidArguments(
+                            "invalid feed: stop_point's({}) time is not consistent".format(
+                                get_value(get_value(arret, "emplacement"), "code")
+                            )
+                        )
+                    previous_rt_stop_event_time = event_datetime
 
         # Calculates effect from stop_time status list (this work is also done in kraken and has to be deleted there)
         if trip_update.effect == TripEffect.MODIFIED_SERVICE.name:

@@ -460,6 +460,20 @@ def _get_stomp_20201022_23188_add_trip_fixture(plan_transport_source="OPE"):
     return piv_feed
 
 
+def _get_stomp_20201022_23187_inconsistency_fixture():
+    piv_feed = get_fixture_data_as_dict("piv/stomp_20201022_23187_blank_fixture.json")
+    obj = piv_feed["objects"][0]["object"]
+    obj["planTransportSource"] = "PTP"
+    obj["numero"] = "23188"
+    ads = obj["listeArretsDesserte"]["arret"]
+    for desserte in ads:
+        if desserte["emplacement"]["code"] == "85162735":
+            desserte["rang"] = 2
+        if desserte["emplacement"]["code"] == "85010140":
+            desserte["rang"] = 3
+    return piv_feed
+
+
 def test_wrong_get_piv_with_id():
     """
     GET /piv/id.contributor (so with an id) is not allowed, only POST is possible
@@ -1980,3 +1994,87 @@ def test_piv_trip_creation_existing_company_and_empty_physical_mode(mock_rabbitm
         assert db_trip.effect == TripEffect.ADDITIONAL_SERVICE.name
         assert db_trip.company_id == "company:PIVPP:1190"
         assert db_trip.physical_mode_id == "physical_mode:LongDistanceTrain"
+
+
+def test_piv_re_routed_at_the_beginning_with_hourly_decrease(mock_rabbitmq):
+    """
+    old trip
+        22:34:00     22:35:00
+       "85010231" - "85010157" - "85010140" - "85162735" - "85162750" - "87745497"
+
+    new trip
+                    "85010157" - "85010140" - "85162735" - "85162750" - "87745497"
+                      //
+    "85010116" - "85010082"
+     22:10:00     22:24:00
+                  delay 11 => 22:35
+
+    Datetimes of stops are not correctly sorted when comparing to "rang",
+    but it is correct anyway, as only deleted stops are incorrectly sorted.
+
+    rang        0           1           2           3
+    uic     "85010116"  "85010082"  "85010231"  "85010140"
+    status      add         add       delete
+    depart   22:10:00   22:35:00     22:34:00    22:48:00
+                        (delay 11)
+    """
+    piv_23187_addition = _get_stomp_20201022_23187_stop_time_added_at_the_beginning_fixture()
+    piv_23187_addition["objects"][0]["object"]["evenement"] = [
+        {"type": "MODIFICATION_DETOURNEMENT", "texte": None}
+    ]
+    disruption = DisruptionTuple(type=None, texte=None)
+    modification = ModificationTuple(statut="CREATION_DETOURNEMENT", motif=None)
+    _set_event_on_stop(
+        fixture=piv_23187_addition,
+        dep_or_arr_key="depart",
+        rang=0,
+        disruption=disruption,
+        modification=modification,
+    )
+    _set_event_on_stops(
+        fixture=piv_23187_addition,
+        rang_min=1,
+        rang_max=1,
+        disruption=disruption,
+        modification=modification,
+        retard_dict={"duree": 11, "dureeInterne": 11},
+    )
+    modification = ModificationTuple(statut=None, motif=None)
+    disruption = DisruptionTuple(type="SUPPRESSION_DETOURNEMENT", texte=None)
+    _set_event_on_stops(
+        fixture=piv_23187_addition,
+        rang_min=2,
+        rang_max=2,
+        disruption=disruption,
+        modification=modification,
+    )
+
+    res = api_post("/piv/{}".format(PIV_CONTRIBUTOR_ID), data=ujson.dumps(piv_23187_addition))
+    assert "PIV feed processed" in res.get("message")
+
+
+def test_piv_inconsistency_stop_times(mock_rabbitmq):
+    # swap rang 2 and 3
+    piv_feed = _get_stomp_20201022_23187_inconsistency_fixture()
+    res, code = api_post("/piv/{}".format(PIV_CONTRIBUTOR_ID), data=ujson.dumps(piv_feed), check=False)
+    assert code == 400
+    assert "invalid feed: stop_point's(85010140) time is not consistent" in res.get("error")
+    assert "invalid arguments" in res.get("message")
+
+
+def test_piv_mdi_stop_times(mock_rabbitmq):
+    # swap rang 2 and 3
+    piv_feed = _get_stomp_20201022_23187_inconsistency_fixture()
+    res, code = api_post("/piv/{}".format(PIV_CONTRIBUTOR_ID), data=ujson.dumps(piv_feed), check=False)
+    assert code == 400
+    assert "invalid feed: stop_point's(85010140) time is not consistent" in res.get("error")
+
+    # "85010140" should not be taken into account in _check_stop_time_consistency
+    ads = piv_feed["objects"][0]["object"]["listeArretsDesserte"]["arret"]
+    for desserte in ads:
+        if desserte["emplacement"]["code"] == "85010140":
+            desserte["indicateurDescenteInterdite"] = True
+            desserte["indicateurMonteeInterdite"] = True
+
+    res = api_post("/piv/{}".format(PIV_CONTRIBUTOR_ID), data=ujson.dumps(piv_feed))
+    assert "PIV feed processed" in res.get("message")
