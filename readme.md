@@ -421,6 +421,13 @@ If the COTS was successfully sent and processed by Kirin, the http response 200 
 
 ## Maintenance
 
+### RabbitMQ management
+
+To protect the RabbitMQ instance used, it is advised to add probes on PIV queues,
+as they may grow fast (especially if no consumer is plugged).
+
+It is also possible to protect them using RabbitMQ [max-length-bytes policies](https://www.rabbitmq.com/maxlength.html).
+
 ### Definitely remove a contributor from configuration
 
 A command to clean inactive contributors is available, to be triggered manually:

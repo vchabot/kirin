@@ -53,6 +53,12 @@ From the _pre-commit's virtualenv_ run:
 pre-commit run --all
 ```
 
+### Design recommandations
+
+* Consider a trip as a sorted list of stop-events (pickup or drop-off).\
+  This should be easier to manipulate than a list of stops with 0, 1 or 2 events,
+  considering stop-events can individually be deleted, added, useless at extremities unless stay-in exist...
+
 ## Internal data format
 
 The format used internally to store and process realtime information is
