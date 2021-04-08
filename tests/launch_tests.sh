@@ -3,7 +3,7 @@
 set -e
 
 # clean all existing cache and previous build artifacts
-rm -rf venv && virtualenv venv && . venv/bin/activate
+rm -rf /tmp/venv && virtualenv /tmp/venv && . /tmp/venv/bin/activate
 rm -rf .pytest_cache
 find . -name "*.pyc" -o -name "__pycache__" -exec rm -rfv {} \;
 
@@ -18,4 +18,4 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=. KIRIN_CONFIG_FILE=test_settings.py \
 	--cov-report xml --junitxml=pytest_kirin.xml --cov=kirin .
 
 # Final clean
-rm -rf venv
+rm -rf /tmp/venv
