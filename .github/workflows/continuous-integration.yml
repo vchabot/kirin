@@ -68,6 +68,8 @@ jobs:
               with:
                   token: ${{ secrets.CODECOV_TOKEN }}
                   file: ./coverage.xml
+            - name: fix code coverage path working-directory in coverage.xml
+              run: sed -i 's/\/home\/runner\/work\/kirin\/kirin\//\/github\/workspace\//g' coverage.xml
             - name: SonarCloud Scan
               uses: SonarSource/sonarcloud-github-action@master
               env:

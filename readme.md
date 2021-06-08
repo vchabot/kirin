@@ -1,7 +1,10 @@
 # Kirin
 
 ![Continuous Integration Status](https://img.shields.io/github/workflow/status/CanalTP/kirin/Continuous%20Integration)
-![Code Coverage](https://img.shields.io/codecov/c/gh/CanalTP/kirin)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=CanalTP_kirin&metric=alert_status)](https://sonarcloud.io/dashboard?id=CanalTP_kirin)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=CanalTP_kirin&metric=security_rating)](https://sonarcloud.io/dashboard?id=CanalTP_kirin)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=CanalTP_kirin&metric=coverage)](https://sonarcloud.io/dashboard?id=CanalTP_kirin)
+
 
 ```py
                                                         /
