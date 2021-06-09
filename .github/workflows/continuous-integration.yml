@@ -68,7 +68,8 @@ jobs:
               with:
                   token: ${{ secrets.CODECOV_TOKEN }}
                   file: ./coverage.xml
-            - name: Change path in coverage.xml to match with working directory in docker SonarCloud container
+            - name: Change code path in coverage.xml to match current code path
+              # sonar accesses code while processing code-coverage
               run: sed -i 's#/home/runner/work/kirin/kirin#/github/workspace#g' coverage.xml
             - name: SonarCloud Scan
               uses: SonarSource/sonarcloud-github-action@master
