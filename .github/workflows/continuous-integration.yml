@@ -68,8 +68,12 @@ jobs:
               with:
                   token: ${{ secrets.CODECOV_TOKEN }}
                   file: ./coverage.xml
-            - name: fix code coverage path working-directory in coverage.xml
-              run: sed -i 's/\/home\/runner\/work\/kirin\/kirin\//\/github\/workspace\//g' coverage.xml
+            - name: Debug
+              run: |
+                echo $GITHUB_WORKSPACE
+                cat pytest_kirin.xml
+            - name: Change path in coverage.xml to match with working directory in docker SonarCloud container
+              run: sed -i 's#$GITHUB_WORKSPACE#/github/workspace/#g' coverage.xml
             - name: SonarCloud Scan
               uses: SonarSource/sonarcloud-github-action@master
               env:
