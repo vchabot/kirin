@@ -5,58 +5,16 @@
 [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=CanalTP_kirin&metric=security_rating)](https://sonarcloud.io/dashboard?id=CanalTP_kirin)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=CanalTP_kirin&metric=coverage)](https://sonarcloud.io/dashboard?id=CanalTP_kirin)
 
-
-```py
-                                                        /
-                                                      .7
-                                           \       , //
-                                           |\.--._/|//
-                                          /\ ) ) ).'/
-                                         /(  \  // /
-                                        /(   J`((_/ \
-                                       / ) | _\     /
-                                      /|)  \  eJ    L
-                                     |  \ L \   L   L
-                                    /  \  J  `. J   L
-                                    |  )   L   \/   \
-                                   /  \    J   (\   /
-                 _....___         |  \      \   \```
-          ,.._.-'        '''--...-||\     -. \   \
-        .'.=.'                    `         `.\ [ Y
-       /   /                                  \]  J
-      Y / Y                                    Y   L
-      | | |          \                         |   L
-      | | |           Y                        A  J
-      |   I           |                       /I\ /
-      |    \          I             \        ( |]/|
-      J     \         /._           /        -tI/ |
-       L     )       /   /'-------'J           `'-:.
-       J   .'      ,'  ,' ,     \   `'-.__          \
-        \ T      ,'  ,'   )\    /|        ';'---7   /
-         \|    ,'L  Y...-' / _.' /         \   /   /
-          J   Y  |  J    .'-'   /         ,--.(   /
-           L  |  J   L -'     .'         /  |    /\
-           |  J.  L  J     .-;.-/       |    \ .' /
-           J   L`-J   L____,.-'`        |  _.-'   |
-            L  J   L  J                  ``  J    |
-            J   L  |   L                     J    |
-             L  J  L    \                    L    \
-             |   L  ) _.'\                    ) _.'\
-             L    \('`    \                  ('`    \
-              ) _.'\`-....'                   `-....'
-             ('`    \
-              `-.___/
-```
-
-Kirin deals with real-time updates for navitia.
-When feeds are provided to Kirin by a client, it requests navitia to find the corresponding vehicle journey and apply the update, that is then posted in a queue for navitia to pick.
+Kirin deals with real-time public-transport data updates for Navitia.\
+When feeds are provided to Kirin by a contributor, it requests navitia to find the corresponding vehicle journey and apply
+the update, that is then posted in a queue for navitia to pick.
 
 The feeds can be of the following type:
 
-- COTS : Also a proprietary realtime information feed for SNCF. JSON files are posted to the Kirin web service
-  (example of such feed
-  [here](https://github.com/CanalTP/kirin/blob/master/tests/fixtures/cots_train_96231_delayed.json)).
-  A cause message subservice is also requested during the processing of this feed.
+- PIV : A proprietary realtime information feed for SNCF.
+  JSON files are received on a RabbitMQ queue processed by
+  the Kirin PIV worker (example of such feed
+  [here](tests/fixtures/piv/stomp_20201022_23187_blank_fixture.json)).
 - GTFS-RT : A realtime information format that comes with the GTFS format (base-schedule informations).
   Documentation is available [here](https://developers.google.com/transit/gtfs-realtime/?hl=en).
   Typically, a transport authority will provide a server where GTFS-RT protobuf files can be consumed and
@@ -204,7 +162,7 @@ curl -X GET 'http://localhost:5000/contributors'
       "is_active": true,
       "navitia_token": "9489dd5f-46b4-mmmmmmmmmm3bfba0c71e8a",
       "connector_type": "gtfs-rt",
-      "id": "realtime.sherbrooke",
+      "id": "realtime.ca-qc-sherbrooke.sts",
       "feed_url": "http://0.0.0.0./civilia/TTT/pb/tripUpdates.pb",
       "retrieval_interval": 10,
       "broker_url": "*not_used_for_gtfsrt*",
@@ -218,7 +176,7 @@ curl -X GET 'http://localhost:5000/contributors'
       "is_active": true,
       "navitia_token": "9489dd5f-46b4-mmmmmmmmmm3bfba0c71e8a",
       "connector_type": "piv",
-      "id": "realtime.piv",
+      "id": "realtime.sncf.piv",
       "feed_url": "*not_used_for_piv*",
       "retrieval_interval": "*not_used_for_piv*",
       "broker_url": "pyamqp://guest:guest@localhost:5672//?heartbeat=60",
@@ -368,7 +326,7 @@ for both Kirin and Kraken (the navitia core calculator).
 
 - In Kirin:
 
-    - Add a contributor 'cots' using the end point `/contributors`
+    - Add a contributor 'piv' using the end point `/contributors` (see example above)
 
 - In Kraken:
 
@@ -387,29 +345,15 @@ for both Kirin and Kraken (the navitia core calculator).
     exchange = navitia
     ```
 
-#### Cots (POST)
+#### PIV (RabbitMQ input)
 
-Post a COTS update file with modifications about a vehicle journey (delay, disruption, deletion, ...)
-that will be modified and posted in the rabbitmq queue.
+An input PIV queue can be provided and configured through `/contributors` parameters.\
+This queue will then be processed by the Kirin PIV worker.\
+PIV feed contains modifications about a vehicle journey (delay, disruption, deletion, ...)
+that will be processed and pushed in the RabbitMQ queue destined to Kraken.
 
-```sh
-curl -X POST 'http://localhost:5000/cots' -H 'Content-Type: application/json' -d @<PATH/TO/my_cots.json>
-```
 
-For the COTS to be taken into account by navitia, please add the common SNCF's parameters above, plus:
-
-- In Kirin:
-
-    - KIRIN_CONFIG_FILE:
-
-    ```py
-    # Parameters for COTS cause message subservice (ParIV)
-    COTS_PAR_IV_API_KEY = '<COTS ParIV API key>'
-    COTS_PAR_IV_MOTIF_RESOURCE_SERVER = '<URL of COTS ParIV-Motif cause endpoint>'
-    COTS_PAR_IV_TOKEN_SERVER = '<URL of COTS ParIV oauth2 token endpoint>'
-    COTS_PAR_IV_CLIENT_ID = '<COTS ParIV username>'
-    COTS_PAR_IV_CLIENT_SECRET = '<COTS ParIV password>'
-    ```
+For the PIV to be taken into account by navitia, please add the common SNCF's parameters above, plus:
 
 - In Kraken:
 
@@ -417,10 +361,8 @@ For the COTS to be taken into account by navitia, please add the common SNCF's p
 
     ```ini
     [BROKER] # in the BROKER section existing from common part
-    rt_topics = realtime.cots  # it's possible to add multiple topics simultaneously
+    rt_topics = realtime.sncf.piv  # kirin's contributor.id: it's possible to add multiple topics simultaneously
     ```
-
-If the COTS was successfully sent and processed by Kirin, the http response 200 will have a message "OK".
 
 ## Maintenance
 
@@ -456,3 +398,45 @@ Those objects are progressively purged by automatic jobs configured in the setti
 
 If you want to develop in Kirin, run tests or read more about technical details please refer to
 [CONTRIBUTING.md](CONTRIBUTING.md)
+
+```py
+                                                        /
+                                                      .7
+                                           \       , //
+                                           |\.--._/|//
+                                          /\ ) ) ).'/
+                                         /(  \  // /
+                                        /(   J`((_/ \
+                                       / ) | _\     /
+                                      /|)  \  eJ    L
+                                     |  \ L \   L   L
+                                    /  \  J  `. J   L
+                                    |  )   L   \/   \
+                                   /  \    J   (\   /
+                 _....___         |  \      \   \```
+          ,.._.-'        '''--...-||\     -. \   \
+        .'.=.'                    `         `.\ [ Y
+       /   /                                  \]  J
+      Y / Y                                    Y   L
+      | | |          \                         |   L
+      | | |           Y                        A  J
+      |   I           |                       /I\ /
+      |    \          I             \        ( |]/|
+      J     \         /._           /        -tI/ |
+       L     )       /   /'-------'J           `'-:.
+       J   .'      ,'  ,' ,     \   `'-.__          \
+        \ T      ,'  ,'   )\    /|        ';'---7   /
+         \|    ,'L  Y...-' / _.' /         \   /   /
+          J   Y  |  J    .'-'   /         ,--.(   /
+           L  |  J   L -'     .'         /  |    /\
+           |  J.  L  J     .-;.-/       |    \ .' /
+           J   L`-J   L____,.-'`        |  _.-'   |
+            L  J   L  J                  ``  J    |
+            J   L  |   L                     J    |
+             L  J  L    \                    L    \
+             |   L  ) _.'\                    ) _.'\
+             L    \('`    \                  ('`    \
+              ) _.'\`-....'                   `-....'
+             ('`    \
+              `-.___/
+```
